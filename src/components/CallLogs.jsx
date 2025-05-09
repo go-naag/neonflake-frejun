@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Calendar from './Calendar';
 
 const CallLogs = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -8,10 +9,14 @@ const CallLogs = () => {
     users: '',
     tags: []
   });
-  const [dateRange, setDateRange] = useState({
-    start: '2025-05-07',
-    end: '2025-05-08'
-  });
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [dateRange, setDateRange] = useState(
+    new Intl.DateTimeFormat('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }).format(new Date())
+  );
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -34,14 +39,15 @@ const CallLogs = () => {
     });
   };
 
-  const handleDateRangeChange = (dates) => {
-    setDateRange(dates);
+  const handleDateRangeChange = (range) => {
+    setDateRange(range);
+    setShowCalendar(false);
   };
 
   return (
     <div className="p-6">
       {/* Filters Section */}
-      <div className="mb-6 flex flex-wrap gap-4">
+      <div className="mb-6 flex flex-wrap gap-4 items-center">
         <div className="relative">
           <select 
             value={selectedFilters.callType}
@@ -117,10 +123,22 @@ const CallLogs = () => {
           Clear all
         </button>
 
-        <div className="ml-auto">
-          <button className="inline-flex items-center px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
-            <span>{dateRange.start} - {dateRange.end}</span>
+        <div className="relative ml-auto">
+          <button 
+            onClick={() => setShowCalendar(!showCalendar)} 
+            className="inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 bg-white"
+          >
+            <svg className="w-5 h-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+            </svg>
+            <span>{dateRange}</span>
           </button>
+          {showCalendar && (
+            <Calendar
+              onDateChange={handleDateRangeChange}
+              onClose={() => setShowCalendar(false)}
+            />
+          )}
         </div>
       </div>
 
@@ -249,7 +267,7 @@ const CallLogs = () => {
                 className="p-1 rounded hover:bg-gray-200 disabled:opacity-50"
               >
                 <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4-4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </button>
             </div>

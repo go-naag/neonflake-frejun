@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import React from 'react';
 
-function Calendar({ onDateChange, onClose }) {  const [selectedDate, setSelectedDate] = useState(new Date(2025, 4, 9)); // May 9, 2025
+function Calendar({ onDateChange, onClose }) {
+  const currentDate = new Date();
+  const [selectedDate, setSelectedDate] = useState(currentDate);
   const [view, setView] = useState('calendar');
-  const [fromDate, setFromDate] = useState('9th May 2025');
-  const [toDate, setToDate] = useState('9th May 2025');
+  const [fromDate, setFromDate] = useState(currentDate.toISOString().split('T')[0]);
+  const [toDate, setToDate] = useState(currentDate.toISOString().split('T')[0]);
   const [fromTime, setFromTime] = useState('00:00');
   const [toTime, setToTime] = useState('23:59');
 
@@ -18,6 +20,14 @@ function Calendar({ onDateChange, onClose }) {  const [selectedDate, setSelected
     { id: 'thisYear', label: 'This year' },
     { id: 'lastYear', label: 'Last year' },
   ];
+
+  const formatDateString = (date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }).format(date);
+  };
 
   const getDaysInMonth = (year, month) => {
     return new Date(year, month + 1, 0).getDate();
@@ -35,15 +45,20 @@ function Calendar({ onDateChange, onClose }) {  const [selectedDate, setSelected
     for (let i = firstDayOfMonth - 1; i >= 0; i--) {
       days.push({
         day: prevMonthDays - i,
-        isCurrentMonth: false
+        isCurrentMonth: false,
+        date: new Date(year, month - 1, prevMonthDays - i)
       });
     }
 
     // Current month days
     for (let i = 1; i <= daysInMonth; i++) {
-      days.push({        day: i,
+      days.push({
+        day: i,
         isCurrentMonth: true,
-        isToday: i === 9 && month === 4 && year === 2025 // May 9, 2025
+        isToday: i === currentDate.getDate() && 
+                 month === currentDate.getMonth() && 
+                 year === currentDate.getFullYear(),
+        date: new Date(year, month, i)
       });
     }
 
@@ -52,11 +67,61 @@ function Calendar({ onDateChange, onClose }) {  const [selectedDate, setSelected
     for (let i = 1; i <= remainingDays; i++) {
       days.push({
         day: i,
-        isCurrentMonth: false
+        isCurrentMonth: false,
+        date: new Date(year, month + 1, i)
       });
     }
 
     return days;
+  };
+
+  const handleDateSelect = (date) => {
+    const formattedDate = formatDateString(date);
+    setSelectedDate(date);
+    setFromDate(date.toISOString().split('T')[0]);
+    setToDate(date.toISOString().split('T')[0]);
+    onDateChange(formattedDate);
+    onClose();
+  };
+
+  const handleCustomRangeSelect = (option) => {
+    const today = new Date();
+    let start = new Date();
+    let end = new Date();
+
+    switch (option.id) {
+      case 'today':
+        break;
+      case 'yesterday':
+        start.setDate(today.getDate() - 1);
+        end = new Date(start);
+        break;
+      case 'thisWeek':
+        start.setDate(today.getDate() - today.getDay());
+        break;
+      case 'lastWeek':
+        start.setDate(today.getDate() - today.getDay() - 7);
+        end.setDate(today.getDate() - today.getDay() - 1);
+        break;
+      case 'thisMonth':
+        start.setDate(1);
+        break;
+      case 'lastMonth':
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+        break;
+      case 'thisYear':
+        start = new Date(today.getFullYear(), 0, 1);
+        break;
+      case 'lastYear':
+        start = new Date(today.getFullYear() - 1, 0, 1);
+        end = new Date(today.getFullYear() - 1, 11, 31);
+        break;
+    }
+
+    const range = `${formatDateString(start)} - ${formatDateString(end)}`;
+    onDateChange(range);
+    onClose();
   };
 
   return (
@@ -94,10 +159,7 @@ function Calendar({ onDateChange, onClose }) {  const [selectedDate, setSelected
               <button
                 key={option.id}
                 className="w-full text-left px-4 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
-                onClick={() => {
-                  onDateChange(`${option.label} Range`);
-                  onClose();
-                }}
+                onClick={() => handleCustomRangeSelect(option)}
               >
                 {option.label}
               </button>
@@ -127,7 +189,7 @@ function Calendar({ onDateChange, onClose }) {  const [selectedDate, setSelected
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 mb-4">
+            <div className="grid grid-cols-7 gap-1">
               {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
                 <div key={day} className="text-center text-sm font-medium text-gray-400 py-1">
                   {day}
@@ -137,73 +199,63 @@ function Calendar({ onDateChange, onClose }) {  const [selectedDate, setSelected
                 <button
                   key={index}
                   className={`p-2 text-center rounded-lg hover:bg-gray-50 ${
-                    !day.isCurrentMonth ? 'text-gray-400' : 'text-gray-700'
-                  } ${day.isToday ? 'bg-indigo-50 text-indigo-600 font-medium' : ''}`}
-                  onClick={() => {
-                    // Handle date selection
-                  }}
+                    !day.isCurrentMonth ? 'text-gray-400' : 
+                    day.isToday ? 'bg-indigo-50 text-indigo-600 font-medium' : 
+                    'text-gray-700'
+                  }`}
+                  onClick={() => handleDateSelect(day.date)}
                 >
                   {day.day}
                 </button>
               ))}
             </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">From</label>
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                  />
-                  <input
-                    type="time"
-                    className="w-full mt-2 px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={fromTime}
-                    onChange={(e) => setFromTime(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">To</label>
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                  />
-                  <input
-                    type="time"
-                    className="w-full mt-2 px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={toTime}
-                    onChange={(e) => setToTime(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t bg-gray-50 flex justify-end gap-2 rounded-b-xl">
-        <button
-          className="px-4 py-2 rounded-lg text-gray-600 hover:bg-white font-medium"
-          onClick={onClose}
-        >
-          Cancel
-        </button>
-        <button
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
-          onClick={() => {
-            onDateChange(`${fromDate} - ${toDate}`);
-            onClose();
-          }}
-        >
-          Apply
-        </button>
-      </div>
+      {/* Custom Range Footer */}
+      {view === 'calendar' && (
+        <div className="p-4 border-t">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">From</label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">To</label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              className="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-50 font-medium"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+              onClick={() => {
+                const range = `${formatDateString(new Date(fromDate))} - ${formatDateString(new Date(toDate))}`;
+                onDateChange(range);
+                onClose();
+              }}
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

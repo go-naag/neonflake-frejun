@@ -41,6 +41,11 @@ const Layout = ({ children }) => {
     window.open('https://product.frejun.com/contact-lists', '_blank');
   };
 
+  const handleSettingsNavigation = (tab) => {
+    setShowProfileMenu(false);
+    navigate('/settings', { state: { activeTab: tab } });
+  };
+
   const CampaignsMenu = ({ onSelect }) => {
     return (
       <div className="absolute z-50 mt-1 w-56 bg-white rounded-lg shadow-lg py-2 border divide-y divide-gray-100">
@@ -160,15 +165,33 @@ const Layout = ({ children }) => {
                       <p className="text-sm text-gray-500">alice@example.com</p>
                     </div>
                     <a
-                      href="/settings"
+                      href="#"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       onClick={(e) => {
                         e.preventDefault();
-                        setShowProfileMenu(false);
-                        navigate('/settings');
+                        handleSettingsNavigation('General');
                       }}
                     >
                       Settings
+                    </a>                    <a
+                      href="#"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleSettingsNavigation('Calling');
+                      }}
+                    >
+                      Your Virtual Number
+                    </a>
+                    <a
+                      href="#"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.open('https://chrome.google.com/webstore/category/extensions', '_blank');
+                      }}
+                    >
+                      Add Chrome Extension
                     </a>
                     <button
                       onClick={() => {

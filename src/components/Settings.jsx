@@ -1,15 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const Settings = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('General');
+  const [selectedCallReason, setSelectedCallReason] = useState('');
+  const [selectedReasons, setSelectedReasons] = useState([]);
+  const [selectedCallOutcome, setSelectedCallOutcome] = useState('');
+  const [selectedOutcomes, setSelectedOutcomes] = useState([]);
+  const [tagInput, setTagInput] = useState('');
+  const [customTags, setCustomTags] = useState([]);
+  
+  // Update activeTab when navigation state changes
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
+
   const [profile, setProfile] = useState({
     firstName: '',
     lastName: '',
-    email: ''
+    email: '',
+    phoneNumber: '',
+    role: 'Admin'
   });
-  const [workingDays, setWorkingDays] = useState(['Monday, Tuesday, W...']);
-  const [workTiming, setWorkTiming] = useState({ start: '00:00', end: '23:55' });
-  const [breakTiming, setBreakTiming] = useState({ start: '00:00', end: '00:00' });
+  const [workingDays, setWorkingDays] = useState(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+  const [workTiming, setWorkTiming] = useState({ start: '09:00', end: '18:00' });
+  const [breakTiming, setBreakTiming] = useState({ start: '13:00', end: '14:00' });
   const [passwords, setPasswords] = useState({
     current: '',
     new: '',
@@ -19,8 +37,6 @@ const Settings = () => {
   const [browserCalling, setBrowserCalling] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [showCallAttributes, setShowCallAttributes] = useState(false);
-  const [callReason, setCallReason] = useState('');
-  const [callOutcome, setCallOutcome] = useState('');
   const [privateRecording, setPrivateRecording] = useState(false);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [connectingTo, setConnectingTo] = useState(null);
@@ -95,6 +111,13 @@ const Settings = () => {
     }
   ];
 
+  const callReasons = [
+    'Inquiry', 'Update', 'Feedback', 'Support', 'Confirmation',
+    'Request', 'Follow-up', 'Complaint', 'Assistance', 'Scheduling'
+  ];
+
+  const callOutcomes = ['Successful', 'Unsuccessful', 'Call Again'];
+
   const handleProfileChange = (field, value) => {
     setProfile(prev => ({
       ...prev,
@@ -110,28 +133,64 @@ const Settings = () => {
   };
 
   const handleSave = () => {
-    // TODO: Implement API call to save profile
-    console.log('Saving profile:', profile);
+    console.log('Saving changes...');
   };
 
   const handleSavePassword = () => {
-    console.log('Saving password changes');
+    if (passwords.new !== passwords.confirm) {
+      alert('New passwords do not match!');
+      return;
+    }
+    console.log('Saving password changes...');
   };
 
   const handleIntegrationClick = async (integration) => {
     if (integration.id === 'viasocket') {
       setCreatingWorkflow(true);
-      // Simulate workflow creation
       setTimeout(() => {
         setCreatingWorkflow(false);
       }, 1500);
     } else {
       setConnectingTo(integration.id);
-      // Simulate connection process
       setTimeout(() => {
         setConnectingTo(null);
       }, 1500);
     }
+  };
+
+  const handleAddCallReason = () => {
+    if (selectedCallReason && !selectedReasons.includes(selectedCallReason)) {
+      setSelectedReasons([...selectedReasons, selectedCallReason]);
+      setSelectedCallReason('');
+    }
+  };
+
+  const handleRemoveCallReason = (reason) => {
+    setSelectedReasons(selectedReasons.filter(r => r !== reason));
+  };
+
+  const handleAddCallOutcome = () => {
+    if (selectedCallOutcome && !selectedOutcomes.includes(selectedCallOutcome)) {
+      setSelectedOutcomes([...selectedOutcomes, selectedCallOutcome]);
+      setSelectedCallOutcome('');
+    }
+  };
+
+  const handleRemoveCallOutcome = (outcome) => {
+    setSelectedOutcomes(selectedOutcomes.filter(o => o !== outcome));
+  };
+
+  const handleTagInputKeyPress = (e) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      if (!customTags.includes(tagInput.trim())) {
+        setCustomTags([...customTags, tagInput.trim()]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tag) => {
+    setCustomTags(customTags.filter(t => t !== tag));
   };
 
   const tabs = ['General', 'Calling', 'Account', 'Integrations'];
@@ -147,9 +206,9 @@ const Settings = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-4 px-1 ${
+              className={`py-4 px-1 relative ${
                 activeTab === tab
-                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  ? 'text-blue-600 border-b-2 border-blue-600 font-medium'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -161,27 +220,31 @@ const Settings = () => {
 
       {activeTab === 'General' ? (
         <div className="max-w-2xl space-y-8">
-          <div>
+          {/* Profile Section */}
+          <div className="bg-white rounded-lg border p-6">
             <h2 className="text-xl font-medium mb-6">Profile</h2>
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">First name</label>
-                <input
-                  type="text"
-                  value={profile.firstName}
-                  onChange={(e) => handleProfileChange('firstName', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Last name</label>
-                <input
-                  type="text"
-                  value={profile.lastName}
-                  onChange={(e) => handleProfileChange('lastName', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First name</label>
+                  <input
+                    type="text"
+                    value={profile.firstName}
+                    onChange={(e) => handleProfileChange('firstName', e.target.value)}
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter first name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last name</label>
+                  <input
+                    type="text"
+                    value={profile.lastName}
+                    onChange={(e) => handleProfileChange('lastName', e.target.value)}
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter last name"
+                  />
+                </div>
               </div>
 
               <div>
@@ -190,32 +253,70 @@ const Settings = () => {
                   type="email"
                   value={profile.email}
                   onChange={(e) => handleProfileChange('email', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter email address"
                 />
               </div>
 
               <div>
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone number</label>
+                <div className="flex gap-2">
+                  <select className="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700">
+                    <option>+91</option>
+                    <option>+1</option>
+                    <option>+44</option>
+                  </select>
+                  <input
+                    type="tel"
+                    value={profile.phoneNumber}
+                    onChange={(e) => handleProfileChange('phoneNumber', e.target.value)}
+                    className="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <select 
+                  value={profile.role}
+                  onChange={(e) => handleProfileChange('role', e.target.value)}
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                 >
-                  Save
-                </button>
+                  <option value="Admin">Admin</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Agent">Agent</option>
+                </select>
               </div>
             </div>
           </div>
 
           {/* Business Hours Section */}
-          <div>
+          <div className="bg-white rounded-lg border p-6">
             <h2 className="text-xl font-medium mb-6">Business Hours</h2>
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Working Days</label>
-                <div className="flex gap-2 items-center">
-                  <div className="bg-gray-100 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                    {workingDays[0]}
-                    <button className="text-gray-500 hover:text-gray-700">×</button>
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                    <button
+                      key={day}
+                      onClick={() => {
+                        setWorkingDays(prev => 
+                          prev.includes(day) 
+                            ? prev.filter(d => d !== day)
+                            : [...prev, day]
+                        );
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        workingDays.includes(day)
+                          ? 'bg-blue-50 text-blue-600 border-2 border-blue-200'
+                          : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -226,14 +327,14 @@ const Settings = () => {
                     type="time"
                     value={workTiming.start}
                     onChange={(e) => setWorkTiming(prev => ({ ...prev, start: e.target.value }))}
-                    className="p-2 border border-gray-300 rounded-md"
+                    className="p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <span>to</span>
+                  <span className="text-gray-500">to</span>
                   <input
                     type="time"
                     value={workTiming.end}
                     onChange={(e) => setWorkTiming(prev => ({ ...prev, end: e.target.value }))}
-                    className="p-2 border border-gray-300 rounded-md"
+                    className="p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -245,69 +346,24 @@ const Settings = () => {
                     type="time"
                     value={breakTiming.start}
                     onChange={(e) => setBreakTiming(prev => ({ ...prev, start: e.target.value }))}
-                    className="p-2 border border-gray-300 rounded-md"
+                    className="p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <span>to</span>
+                  <span className="text-gray-500">to</span>
                   <input
                     type="time"
                     value={breakTiming.end}
                     onChange={(e) => setBreakTiming(prev => ({ ...prev, end: e.target.value }))}
-                    className="p-2 border border-gray-300 rounded-md"
+                    className="p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
 
-              <div>
+              <div className="pt-4">
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                  className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                 >
-                  Save
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Password Section */}
-          <div>
-            <h2 className="text-xl font-medium mb-6">Password</h2>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Current password</label>
-                <input
-                  type="password"
-                  value={passwords.current}
-                  onChange={(e) => handlePasswordChange('current', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                <input
-                  type="password"
-                  value={passwords.new}
-                  onChange={(e) => handlePasswordChange('new', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-                <input
-                  type="password"
-                  value={passwords.confirm}
-                  onChange={(e) => handlePasswordChange('confirm', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
-
-              <div>
-                <button
-                  onClick={handleSavePassword}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                >
-                  Save
+                  Save Changes
                 </button>
               </div>
             </div>
@@ -414,154 +470,257 @@ const Settings = () => {
               </button>
             </div>
           </div>
-        </div>
-      ) : activeTab === 'Account' ? (
+        </div>      ) : activeTab === 'Account' ? (
         <div className="max-w-4xl">
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-medium mb-4">Call attributes</h2>
-              
-              {/* Call Reason */}
-              <div className="mb-6">
-                <label className="block text-sm text-gray-700 mb-2">Call reason</label>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Type and press Enter to create"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
-                  />
+          {/* Call Attributes Card */}
+          <div className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow p-6 mb-8">
+            <h2 className="text-xl font-medium text-gray-900 mb-6 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Call Attributes
+            </h2>
+            
+            {/* Call Reason Section */}
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
+                <label className="block text-sm font-medium text-gray-900 mb-3">Call Reason</label>
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <select
+                      value={selectedCallReason}
+                      onChange={(e) => setSelectedCallReason(e.target.value)}
+                      className="flex-grow px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select call reason</option>
+                      {callReasons.map((reason) => (
+                        <option key={reason} value={reason}>{reason}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleAddCallReason}
+                      disabled={!selectedCallReason}
+                      className="px-6 py-2.5 bg-blue-600 text-white rounded-lg disabled:opacity-50 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    {['Inquiry', 'Update', 'Feedback', 'Support', 'Confirmation', 
-                      'Request', 'Follow-up', 'Complaint', 'Assistance', 'Scheduling'].map((tag) => (
-                      <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-gray-100 text-gray-800">
-                        {tag}
-                        <button className="ml-1 text-gray-500 hover:text-gray-700">×</button>
+                    {selectedReasons.map((reason) => (
+                      <span
+                        key={reason}
+                        className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-blue-50 text-blue-700 border border-blue-100"
+                      >
+                        {reason}
+                        <button
+                          onClick={() => handleRemoveCallReason(reason)}
+                          className="ml-2 text-blue-500 hover:text-blue-700"
+                        >
+                          ×
+                        </button>
                       </span>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Call Outcome */}
-              <div className="mb-6">
-                <label className="block text-sm text-gray-700 mb-2">Call outcome</label>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Type and press Enter to create"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
-                  />
+              {/* Call Outcome Section */}
+              <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
+                <label className="block text-sm font-medium text-gray-900 mb-3">Call Outcome</label>
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <select
+                      value={selectedCallOutcome}
+                      onChange={(e) => setSelectedCallOutcome(e.target.value)}
+                      className="flex-grow px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select call outcome</option>
+                      {callOutcomes.map((outcome) => (
+                        <option key={outcome} value={outcome}>{outcome}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleAddCallOutcome}
+                      disabled={!selectedCallOutcome}
+                      className="px-6 py-2.5 bg-blue-600 text-white rounded-lg disabled:opacity-50 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    {['Successful', 'Unsuccessful', 'Call Again'].map((tag) => (
-                      <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-gray-100 text-gray-800">
-                        {tag}
-                        <button className="ml-1 text-gray-500 hover:text-gray-700">×</button>
+                    {selectedOutcomes.map((outcome) => (
+                      <span
+                        key={outcome}
+                        className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-blue-50 text-blue-700 border border-blue-100"
+                      >
+                        {outcome}
+                        <button
+                          onClick={() => handleRemoveCallOutcome(outcome)}
+                          className="ml-2 text-blue-500 hover:text-blue-700"
+                        >
+                          ×
+                        </button>
                       </span>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Tags */}
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Tags</label>
-                <input
-                  type="text"
-                  placeholder="Type and press Enter to create"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-            </div>
-
-            {/* Notifications */}
-            <div>
-              <h2 className="text-lg font-medium mb-4">Notifications</h2>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Call reports</div>
-                    <div className="text-sm text-gray-500">Get daily call reports through email</div>
-                    <div className="text-sm text-gray-500">Daily - 08:00 (IST) <button className="text-blue-500">Edit</button></div>
+              {/* Custom Tags Section */}
+              <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
+                <label className="block text-sm font-medium text-gray-900 mb-3">Custom Tags</label>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyPress={handleTagInputKeyPress}
+                    placeholder="Type and press Enter to create"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {customTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-blue-50 text-blue-700 border border-blue-100"
+                      >
+                        {tag}
+                        <button
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-2 text-blue-500 hover:text-blue-700"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
                   </div>
-                  <button className={`relative inline-flex h-6 w-11 items-center rounded-full bg-green-500`}>
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white translate-x-6`} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Call recording announcement</div>
-                    <div className="text-sm text-gray-500">Notify both the caller and recipient that the call is being recorded.</div>
-                  </div>
-                  <button className={`relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200`}>
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white translate-x-1`} />
-                  </button>
                 </div>
               </div>
             </div>
+          </div>
+          
+          {/* Notifications Card */}
+          <div className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow p-6 mb-8">
+            <h2 className="text-xl font-medium text-gray-900 mb-6 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              Notifications
+            </h2>
+            
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div>
+                  <div className="font-medium text-gray-900">Call Reports</div>
+                  <div className="text-sm text-gray-600">Get daily call reports through email</div>
+                  <div className="text-sm text-gray-600 mt-1">Daily - 08:00 (IST) <button className="text-blue-600 hover:text-blue-700">Edit</button></div>
+                </div>
+                <div className="relative">
+                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6 transition-transform" />
+                  </button>
+                </div>
+              </div>
 
-            {/* Privacy & Security */}
-            <div>
-              <h2 className="text-lg font-medium mb-4">Privacy & Security</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Private Recording</div>
-                    <div className="text-sm text-gray-500">Sharable recording links would be private</div>
-                  </div>
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div>
+                  <div className="font-medium text-gray-900">Call Recording Announcement</div>
+                  <div className="text-sm text-gray-600">Notify both the caller and recipient that the call is being recorded</div>
+                </div>
+                <div className="relative">
+                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Security Card */}
+          <div className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow p-6 mb-8">
+            <h2 className="text-xl font-medium text-gray-900 mb-6 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Privacy & Security
+            </h2>
+            
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div>
+                  <div className="font-medium text-gray-900">Private Recording</div>
+                  <div className="text-sm text-gray-600">Sharable recording links would be private</div>
+                </div>
+                <div className="relative">
                   <button 
                     onClick={() => setPrivateRecording(!privateRecording)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full ${privateRecording ? 'bg-green-500' : 'bg-gray-200'}`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${privateRecording ? 'bg-blue-600' : 'bg-gray-200'}`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white ${privateRecording ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${privateRecording ? 'translate-x-6' : 'translate-x-1'}`} />
                   </button>
                 </div>
+              </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Two factor authentication</div>
-                    <div className="text-sm text-gray-500">Make 2FA as default security verification method for all users</div>
-                  </div>
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div>
+                  <div className="font-medium text-gray-900">Two Factor Authentication</div>
+                  <div className="text-sm text-gray-600">Make 2FA as default security verification method for all users</div>
+                </div>
+                <div className="relative">
                   <button 
                     onClick={() => setTwoFactorAuth(!twoFactorAuth)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full ${twoFactorAuth ? 'bg-green-500' : 'bg-gray-200'}`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${twoFactorAuth ? 'bg-blue-600' : 'bg-gray-200'}`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white ${twoFactorAuth ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${twoFactorAuth ? 'translate-x-6' : 'translate-x-1'}`} />
                   </button>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Block list */}
-            <div>
-              <h2 className="text-lg font-medium mb-4">Block list</h2>
-              <div className="text-sm text-gray-600 mb-4">
-                Block contacts/numbers from calling or messaging you.
+          {/* Block List Card */}
+          <div className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-medium text-gray-900 mb-2 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                  Block List
+                </h2>
+                <p className="text-sm text-gray-600">Block contacts/numbers from calling or messaging you</p>
               </div>
-              <button className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                Manage block list
+              <button className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                Manage List
               </button>
             </div>
+          </div>
 
-            {/* API Key */}
-            <div>
-              <h2 className="text-lg font-medium mb-4">API Key</h2>
-              <div className="flex gap-2 items-center mb-2">
+          {/* API Key Card */}
+          <div className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow p-6">
+            <h2 className="text-xl font-medium text-gray-900 mb-6 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              API Key
+            </h2>
+            
+            <div className="space-y-4">
+              <div className="flex gap-3">
                 <input
                   type="text"
                   placeholder="Click the button to create API key"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-md text-gray-700 bg-gray-50"
+                  className="flex-grow px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 focus:outline-none cursor-not-allowed"
                   disabled
                 />
-                <button className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                <button className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
                   Create
                 </button>
               </div>
-              <div className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600">
                 This page provides background information on API keys and authentication: how each of these are used, the differences between them, and the scenarios where you should consider using API keys.{' '}
-                <a href="#" className="text-blue-500 hover:underline">Read our Privacy Policy</a>
-              </div>
+                <a href="#" className="text-blue-600 hover:text-blue-700 hover:underline">Read our Privacy Policy</a>
+              </p>
             </div>
           </div>
         </div>
