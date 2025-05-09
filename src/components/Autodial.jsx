@@ -1,26 +1,55 @@
 import React, { useState } from 'react';
 
 const Autodial = () => {
-  const [showNewCampaign, setShowNewCampaign] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('Campaign status');
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Table columns configuration
+  const columns = [
+    { header: 'Campaign', key: 'campaign' },
+    { header: 'Created on', key: 'createdOn' },
+    { header: 'Contacts', key: 'contacts' },
+    { header: 'Reached', key: 'reached' },
+    { header: 'Status', key: 'status' }
+  ];
+
+  // Empty state for initial load
+  const campaigns = [];
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Autodial Campaigns</h1>
-        <button
-          onClick={() => setShowNewCampaign(true)}
-          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          New Campaign
-        </button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold">Autodial campaigns</h1>
       </div>
 
-      {/* Search and Filters */}
+      {/* Filters Section */}
       <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="appearance-none w-40 px-3 py-2 bg-white border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer pr-10"
+            >
+              <option>Campaign status</option>
+              <option>Active</option>
+              <option>Paused</option>
+              <option>Completed</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+              </svg>
+            </div>
+          </div>
+          <button 
+            onClick={() => setSelectedStatus('Campaign status')}
+            className="text-gray-500 hover:text-gray-700 text-sm"
+          >
+            Clear all
+          </button>
+        </div>
         <div className="relative w-96">
           <input
             type="text"
@@ -29,106 +58,63 @@ const Autodial = () => {
             placeholder="Search campaigns..."
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           />
-          <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <svg 
+            className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" 
+            viewBox="0 0 20 20" 
+            fill="currentColor"
+          >
             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
           </svg>
         </div>
-        <div className="flex items-center gap-4">
-          <select className="px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-            <option>All Status</option>
-            <option>Active</option>
-            <option>Paused</option>
-            <option>Completed</option>
-          </select>
-          <button className="text-gray-500 hover:text-gray-700">Clear filters</button>
-        </div>
       </div>
 
-      {/* No Campaigns State */}
-      <div className="bg-white rounded-lg border p-8 text-center">
-        <div className="max-w-sm mx-auto">
+      {/* Table Section */}
+      <div className="bg-white rounded-lg border">
+        <table className="min-w-full">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              {columns.map((column) => (
+                <th 
+                  key={column.key}
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  {column.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+        </table>
+
+        {/* No Data State */}
+        <div className="flex flex-col items-center justify-center py-16">
           <div className="mb-4">
-            <svg className="w-12 h-12 text-gray-400 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No campaigns yet</h3>
-          <p className="text-gray-500 mb-6">Get started by creating your first autodial campaign</p>
-          <button
-            onClick={() => setShowNewCampaign(true)}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 inline-flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-            Create Campaign
-          </button>
+          <p className="text-gray-500 text-sm">No data</p>
+          <p className="text-gray-400 text-sm">No records found for selection.</p>
+        </div>
+
+        {/* Table Footer */}
+        <div className="px-6 py-3 flex items-center justify-between border-t bg-white">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">Rows per page:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              className="border rounded px-2 py-1 text-sm text-gray-600"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600">0-0 of 0</span>
+          </div>
         </div>
       </div>
-
-      {/* New Campaign Modal */}
-      {showNewCampaign && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-[600px]">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">New Campaign</h2>
-              <button
-                onClick={() => setShowNewCampaign(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Enter campaign name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 h-24 resize-none"
-                  placeholder="Enter campaign description"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contact List</label>
-                <select className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-                  <option value="">Select a contact list</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Template</label>
-                <select className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-                  <option value="">Select a template</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowNewCampaign(false)}
-                className="px-4 py-2 text-gray-700 hover:text-gray-900"
-              >
-                Cancel
-              </button>
-              <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-                Create Campaign
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

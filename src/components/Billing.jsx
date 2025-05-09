@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useCredits } from './Layout';
 
 const Billing = () => {
-  const [activeTab, setActiveTab] = useState('Billing');
-  const [totalCredits, setTotalCredits] = useState(0);
+  const [activeTab, setActiveTab] = useState('Credits');
+  const { credits, setCredits } = useCredits();
   const [customAmount, setCustomAmount] = useState('');
   const [subscriptionPayments, setSubscriptionPayments] = useState(false);
   const [notifyLowBalance, setNotifyLowBalance] = useState(false);
@@ -22,8 +23,11 @@ const Billing = () => {
     e.preventDefault();
     const amount = parseFloat(customAmount);
     if (!isNaN(amount) && amount > 0) {
-      setTotalCredits(prev => prev + amount);
+      setCredits(prev => prev + amount);
       setCustomAmount('');
+      alert('Credits added successfully!');
+    } else {
+      alert('Please enter a valid amount');
     }
   };
 
@@ -66,7 +70,7 @@ const Billing = () => {
         <div className="max-w-[640px]">
           <div className="mb-12">
             <h2 className="text-sm font-medium text-gray-700 mb-1">Credits (INR)</h2>
-            <div className="text-3xl font-semibold text-gray-900 mb-2">₹{totalCredits}</div>
+            <div className="text-3xl font-semibold text-gray-900 mb-2">₹{credits}</div>
             <button className="text-blue-600 hover:text-blue-700 text-sm">
               View usage
             </button>

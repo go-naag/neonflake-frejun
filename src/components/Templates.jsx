@@ -6,33 +6,41 @@ const Templates = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showNewTemplateDialog, setShowNewTemplateDialog] = useState(false);
+  const [showVariableDropdown, setShowVariableDropdown] = useState(false);
   const [newTemplate, setNewTemplate] = useState({
     name: '',
     message: ''
   });
-  const [showVariableDropdown, setShowVariableDropdown] = useState(false);
+  
+  // Store templates in state
+  const [templates, setTemplates] = useState([
+    {
+      id: 1,
+      name: 'Default Template',
+      message: 'Dear {Contact name}, This is {Agent name} calling from {Organization name}. We tri...',
+      createdAt: new Date().toISOString()
+    }
+  ]);
 
   const variables = [
     'Contact name',
     'Contact phone number',
-    'Agent name'
-  ];
-
-  // Mock template data
-  const templates = [
-    {
-      id: 1,
-      name: 'Default Template',
-      message: 'Dear {Contact name}, This is {Agent name} calling from {Organization name}. We tri...'
-    }
+    'Agent name',
+    'Organization name'
   ];
 
   const filteredTemplates = templates.filter(template => 
     template.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const paginatedTemplates = filteredTemplates.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
   const handleNewTemplate = () => {
     setShowNewTemplateDialog(true);
+    setNewTemplate({ name: '', message: '' });
   };
 
   const handleCloseDialog = () => {
@@ -41,9 +49,32 @@ const Templates = () => {
   };
 
   const handleCreateTemplate = () => {
-    // Handle template creation
-    console.log('Creating template:', newTemplate);
+    // Validate required fields
+    if (!newTemplate.name.trim()) {
+      alert('Please enter a template name');
+      return;
+    }
+
+    if (!newTemplate.message.trim()) {
+      alert('Please enter a message');
+      return;
+    }
+
+    // Create new template with unique ID
+    const newTemplateData = {
+      id: Date.now(),
+      ...newTemplate,
+      createdAt: new Date().toISOString()
+    };
+
+    // Add to templates list
+    setTemplates(prev => [...prev, newTemplateData]);
+
+    // Reset form and close dialog
     handleCloseDialog();
+
+    // Show success message
+    alert('Template created successfully!');
   };
 
   const handleInsertVariable = (variable) => {
@@ -64,7 +95,7 @@ const Templates = () => {
         <div className="relative w-[300px]">
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search templates..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -115,14 +146,19 @@ const Templates = () => {
               <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">
                 Message
               </th>
+              <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">
+                Created on
+              </th>
+              <th className="text-right py-4 px-6 text-sm font-medium text-gray-500">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredTemplates.map((template) => (
+            {paginatedTemplates.map((template) => (
               <tr 
                 key={template.id}
-                className="hover:bg-gray-50 cursor-pointer"
-                onClick={() => setSelectedTemplate(template)}
+                className="hover:bg-gray-50"
               >
                 <td className="py-4 px-6 text-sm text-gray-900">
                   {template.name}
@@ -130,8 +166,37 @@ const Templates = () => {
                 <td className="py-4 px-6 text-sm text-gray-500">
                   {template.message}
                 </td>
+                <td className="py-4 px-6 text-sm text-gray-500">
+                  {new Date(template.createdAt).toLocaleDateString()}
+                </td>
+                <td className="py-4 px-6 text-sm text-right">
+                  <button 
+                    onClick={() => setSelectedTemplate(template)}
+                    className="text-indigo-600 hover:text-indigo-900"
+                  >
+                    Edit
+                  </button>
+                  <span className="mx-2 text-gray-300">|</span>
+                  <button 
+                    onClick={() => {
+                      if (confirm('Are you sure you want to delete this template?')) {
+                        setTemplates(prev => prev.filter(t => t.id !== template.id));
+                      }
+                    }}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             ))}
+            {paginatedTemplates.length === 0 && (
+              <tr>
+                <td colSpan="4" className="py-8 text-center text-gray-500">
+                  No templates found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
 
@@ -141,7 +206,10 @@ const Templates = () => {
             <span className="text-sm text-gray-600">Rows per page:</span>
             <select
               value={rowsPerPage}
-              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
               className="border rounded px-2 py-1 text-sm text-gray-600"
             >
               <option value={10}>10</option>
@@ -151,7 +219,12 @@ const Templates = () => {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">
-              1-1 of 1
+              {filteredTemplates.length > 0
+                ? `${(currentPage - 1) * rowsPerPage + 1}-${Math.min(
+                    currentPage * rowsPerPage,
+                    filteredTemplates.length
+                  )} of ${filteredTemplates.length}`
+                : '0-0 of 0'}
             </span>
             <div className="flex gap-1">
               <button 
@@ -162,7 +235,7 @@ const Templates = () => {
                 <svg className="w-5 h-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
                   <path 
                     fillRule="evenodd" 
-                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" 
+                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" 
                     clipRule="evenodd" 
                   />
                 </svg>
@@ -204,7 +277,7 @@ const Templates = () => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Template name
+                  Template name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -212,12 +285,13 @@ const Templates = () => {
                   onChange={(e) => setNewTemplate(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter template name"
+                  required
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Message
+                  Message <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <textarea
@@ -225,9 +299,11 @@ const Templates = () => {
                     onChange={(e) => setNewTemplate(prev => ({ ...prev, message: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32"
                     placeholder="Enter message or type '@' to insert variables"
+                    required
                   />
                   <div className="relative">
                     <button 
+                      type="button"
                       onClick={() => setShowVariableDropdown(!showVariableDropdown)}
                       className="absolute right-2 bottom-2 text-green-600 hover:text-green-700 flex items-center gap-1 text-sm font-medium"
                     >
@@ -241,6 +317,7 @@ const Templates = () => {
                         {variables.map((variable) => (
                           <button
                             key={variable}
+                            type="button"
                             onClick={() => handleInsertVariable(variable)}
                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
@@ -256,14 +333,16 @@ const Templates = () => {
 
             <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={handleCloseDialog}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleCreateTemplate}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
               >
                 Create
               </button>

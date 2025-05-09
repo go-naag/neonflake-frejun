@@ -3,20 +3,31 @@ import React, { useState } from 'react';
 const ContactLists = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewListModal, setShowNewListModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedList, setSelectedList] = useState(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedItems, setSelectedItems] = useState([]);
+  
+  // New form state
+  const [newListForm, setNewListForm] = useState({
+    name: '',
+    description: '',
+    file: null
+  });
 
   // Mock data - replace with actual data from your backend
-  const lists = [
+  const [lists, setLists] = useState([
     {
       id: 1,
       name: 'Sales Leads',
       contacts: 150,
       lastUpdated: '8th May 2025',
-      status: 'Active'
+      status: 'Active',
+      description: 'Sales leads contact list'
     }
-  ];
+  ]);
 
   const filteredLists = lists.filter(list =>
     list.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -46,6 +57,53 @@ const ContactLists = () => {
   const handleBulkExport = () => {
     // Implement bulk export functionality
     console.log('Exporting items:', selectedItems);
+  };
+
+  const handleEdit = (list) => {
+    setSelectedList(list);
+    setShowEditModal(true);
+  };
+
+  const handleDelete = (list) => {
+    setSelectedList(list);
+    setShowDeleteModal(true);
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    const updatedLists = lists.map(list => 
+      list.id === selectedList.id ? selectedList : list
+    );
+    setLists(updatedLists);
+    setShowEditModal(false);
+    setSelectedList(null);
+  };
+
+  const handleDeleteConfirm = () => {
+    const updatedLists = lists.filter(list => list.id !== selectedList.id);
+    setLists(updatedLists);
+    setShowDeleteModal(false);
+    setSelectedList(null);
+  };
+
+  const handleCreateList = (e) => {
+    e.preventDefault();
+    const newList = {
+      id: Date.now(),
+      name: newListForm.name,
+      description: newListForm.description,
+      contacts: 0,
+      lastUpdated: new Date().toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }),
+      status: 'Active'
+    };
+
+    setLists([...lists, newList]);
+    setNewListForm({ name: '', description: '', file: null });
+    setShowNewListModal(false);
   };
 
   return (
@@ -174,9 +232,19 @@ const ContactLists = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                  <button className="text-indigo-600 hover:text-indigo-900">Edit</button>
+                  <button 
+                    onClick={() => handleEdit(list)}
+                    className="text-indigo-600 hover:text-indigo-900 font-medium"
+                  >
+                    Edit
+                  </button>
                   <span className="mx-2 text-gray-300">|</span>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
+                  <button 
+                    onClick={() => handleDelete(list)}
+                    className="text-red-600 hover:text-red-900 font-medium"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
@@ -223,14 +291,17 @@ const ContactLists = () => {
         </div>
       </div>
 
-      {/* New List Modal */}
-      {showNewListModal && (
+      {/* Edit Modal */}
+      {showEditModal && selectedList && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-[600px]">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">New Contact List</h2>
+              <h2 className="text-xl font-semibold">Edit Contact List</h2>
               <button
-                onClick={() => setShowNewListModal(false)}
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedList(null);
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,11 +310,13 @@ const ContactLists = () => {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">List Name</label>
                 <input
                   type="text"
+                  value={selectedList.name}
+                  onChange={(e) => setSelectedList({...selectedList, name: e.target.value})}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Enter list name"
                 />
@@ -252,6 +325,131 @@ const ContactLists = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
+                  value={selectedList.description}
+                  onChange={(e) => setSelectedList({...selectedList, description: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 h-24 resize-none"
+                  placeholder="Enter list description"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={selectedList.status}
+                  onChange={(e) => setSelectedList({...selectedList, status: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedList(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedList && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[400px]">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Delete Contact List</h2>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedList(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-600">
+                Are you sure you want to delete "{selectedList.name}"? This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedList(null);
+                }}
+                className="px-4 py-2 text-gray-700 hover:text-gray-900"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New List Modal */}
+      {showNewListModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[600px]">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">New Contact List</h2>
+              <button
+                onClick={() => {
+                  setShowNewListModal(false);
+                  setNewListForm({ name: '', description: '', file: null });
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateList} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">List Name</label>
+                <input
+                  type="text"
+                  value={newListForm.name}
+                  onChange={(e) => setNewListForm({...newListForm, name: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter list name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={newListForm.description}
+                  onChange={(e) => setNewListForm({...newListForm, description: e.target.value})}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 h-24 resize-none"
                   placeholder="Enter list description"
                 />
@@ -267,27 +465,45 @@ const ContactLists = () => {
                     <div className="text-sm text-gray-600">
                       <label className="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
                         <span>Upload a file</span>
-                        <input type="file" className="sr-only" />
+                        <input 
+                          type="file" 
+                          className="sr-only"
+                          onChange={(e) => setNewListForm({...newListForm, file: e.target.files[0]})}
+                          accept=".csv,.xls,.xlsx"
+                        />
                       </label>
                       <p className="pl-1">or drag and drop</p>
                     </div>
                     <p className="text-xs text-gray-500">CSV, XLS up to 10MB</p>
+                    {newListForm.file && (
+                      <p className="text-sm text-green-600">
+                        Selected file: {newListForm.file.name}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowNewListModal(false)}
-                className="px-4 py-2 text-gray-700 hover:text-gray-900"
-              >
-                Cancel
-              </button>
-              <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-                Create List
-              </button>
-            </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewListModal(false);
+                    setNewListForm({ name: '', description: '', file: null });
+                  }}
+                  className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                  disabled={!newListForm.name}
+                >
+                  Create List
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
